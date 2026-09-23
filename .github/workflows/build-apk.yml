@@ -1,0 +1,50 @@
+name: Build LEDCAR APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "LEDCAR_ANDROID_PROJECT.zip"
+      - ".github/workflows/build-apk.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Gradle 8.7
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+
+      - name: Unpack Android project
+        run: |
+          rm -rf buildsrc
+          mkdir buildsrc
+          unzip -q LEDCAR_ANDROID_PROJECT.zip -d buildsrc
+          ls -la buildsrc/LEDCAR_ANDROID_PROJECT
+
+      - name: Build debug APK
+        working-directory: buildsrc/LEDCAR_ANDROID_PROJECT
+        run: gradle assembleDebug --stacktrace
+
+      - name: Rename APK
+        run: |
+          cp buildsrc/LEDCAR_ANDROID_PROJECT/app/build/outputs/apk/debug/app-debug.apk LEDCAR.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: LEDCAR-APK
+          path: LEDCAR.apk
+          if-no-files-found: error
